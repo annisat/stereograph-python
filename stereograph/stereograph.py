@@ -2,8 +2,9 @@
 # 1. Prepare an image (e.g. my_image.png). Don't use lossy image (most commonly .jpg).
 # 2. Copy your image and rename them for masks (e.g. my_image_mask1.png, my_image_mask2.png)
 # 3. Open mask files (e.g. my_image_mask2.png)  with MichaelSoft Paint.
-# 4. Use Polygon -> Filled -> Set silhouette color and fill color to, e.g. (2, 2, 2). 2 is the "protruding height" of your stereograph.
-# 5. `python stereograph.py make_filter my_image_mask2.png 2`
+# 4. Use Polygon -> Filled -> Set edge color and fill color to, e.g. (10, 10, 10).
+#    Pixel in (10, 10, 10) will be rendered with "protruding height" of 1; and (20, 20, 20) for 2, etc.
+# 5. `python stereograph.py make_filter my_image_mask2.png 10`
 # 6. `python stereograph.py merge_filters main_filter.png my_image_mask1.png my_image_mask2.png ...`
 # 7. `python stereograph.py do my_image.png main_filter.png`
 # If the size of `my_image.png` is too large for visions to overlap, set resizing factor to adjust image.
@@ -23,19 +24,10 @@ def do(fn, mask, ratio=1):
     
     for v in np.unique(mask):
         if v == 0: continue
-        # if v > 10: continue
-        # v *= 2
         s = v//10
-        # if s%2:
-        # s = v//2+1
         shifted_img = np.pad(img, ((0,0), (0, s), (0,0)), mode='edge')[:, s:, :]
-        shifted_mask = np.pad(mask, ((0,0), (0, s), (0,0)), mode='constant', constant_values=0)[:, s:, :]
-        img_r = np.where(shifted_mask==v, shifted_img, img_r)
-        # else:
-            # s = v//2
-            # shifted_img = np.pad(img, ((0,0), (s, 0), (0,0)), mode='edge')[:, :-s, :]
-            # shifted_mask = np.pad(mask, ((0,0), (s, 0), (0,0)), mode='constant', constant_values=0)[:, :-s, :]
-            # img_l = np.where(shifted_mask==v, shifted_img, img_l)
+        # shifted_mask = np.pad(mask, ((0,0), (0, s), (0,0)), mode='constant', constant_values=0)[:, s:, :]
+        img_r = np.where(mask==v, shifted_img, img_r)
     
     joint_img = np.concatenate([img_l, np.ones((img.shape[0], 20, 3))*255, img_r], axis=1)
     joint_img = np.pad(joint_img, ((50,50), (50,50), (0,0)), mode='constant', constant_values=255)
